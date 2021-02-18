@@ -246,7 +246,7 @@ func TestErrors(t *testing.T) {
 
 func assert(t *testing.T, json interface{}, tests map[string]interface{}) {
 	for path, expected := range tests {
-		actual, err := Read(json, path)
+		actual, err := Get(json, path)
 		if err != nil {
 			t.Error("failed:", path, err)
 		} else if !reflect.DeepEqual(actual, expected) {
@@ -257,7 +257,7 @@ func assert(t *testing.T, json interface{}, tests map[string]interface{}) {
 
 func assertError(t *testing.T, json interface{}, tests map[string]string) {
 	for path, expectedError := range tests {
-		_, err := Read(json, path)
+		_, err := Get(json, path)
 		if err == nil {
 			t.Error("path", path, "should fail with", expectedError)
 		} else if !strings.Contains(err.Error(), expectedError) {

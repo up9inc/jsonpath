@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/yalp/jsonpath.svg?branch=master)](https://travis-ci.org/yalp/jsonpath)
+[![Build Status](https://travis-ci.org/up9inc/jsonpath.svg?branch=master)](https://travis-ci.org/up9inc/jsonpath)
 
 This was mostly an experiment to learn go and test using closures to interpret a JSON path.
 You should use https://github.com/PaesslerAG/jsonpath instead.
@@ -38,7 +38,7 @@ Checkout the [tests](jsonpath_test.go) for more examples.
 
 ## Install
 
-    go get github.com/yalp/jsonpath
+    go get github.com/up9inc/jsonpath
 
 ## Usage
 
@@ -46,7 +46,7 @@ A jsonpath applies to any JSON decoded data using `interface{}` when decoded wit
 
     var bookstore interface{}
     err := json.Unmarshal(data, &bookstore)
-    authors, err := jsonpath.Read(bookstore, "$..authors")
+    authors, err := jsonpath.Get(bookstore, "$..authors")
 
 A jsonpath expression can be prepared to be reused multiple times :
 
@@ -56,4 +56,4 @@ A jsonpath expression can be prepared to be reused multiple times :
     err := json.Unmarshal(data, &bookstore)
     authors, err := allAuthors(bookstore)
 
-The type of the values returned by the `Read` method or `Prepare` functions depends on the jsonpath expression.
+The type of the values returned by the `Get` method or `Prepare` functions depends on the jsonpath expression.

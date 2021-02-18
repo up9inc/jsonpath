@@ -5,7 +5,7 @@
 //
 //    var bookstore interface{}
 //    err := json.Unmarshal(data, &bookstore)
-//    authors, err := jsonpath.Read(bookstore, "$..authors")
+//    authors, err := jsonpath.Get(bookstore, "$..authors")
 //
 // A jsonpath expression can be prepared to be reused multiple times :
 //
@@ -15,7 +15,7 @@
 //    err = json.Unmarshal(data, &bookstore)
 //    authors, err := allAuthors(bookstore)
 //
-// The type of the values returned by the `Read` method or `Prepare`
+// The type of the values returned by the `Get` method or `Prepare`
 // functions depends on the jsonpath expression.
 //
 // Limitations
@@ -35,12 +35,21 @@ import (
 	"text/scanner"
 )
 
-// Read a path from a decoded JSON array or object ([]interface{} or map[string]interface{})
+// Get a path from a decoded JSON array or object ([]interface{} or map[string]interface{})
 // and returns the corresponding value or an error.
 //
 // The returned value type depends on the requested path and the JSON value.
-func Read(value interface{}, path string) (interface{}, error) {
-	filter, err := Prepare(path)
+func Get(value interface{}, path string) (interface{}, error) {
+	_, filter, err := Prepare(path)
+	if err != nil {
+		return nil, err
+	}
+	return filter(value)
+}
+
+func Set(value interface{}, path string, update interface{}) (interface{}, error) {
+	p, filter, err := Prepare(path)
+	p.update = update
 	if err != nil {
 		return nil, err
 	}
@@ -48,12 +57,12 @@ func Read(value interface{}, path string) (interface{}, error) {
 }
 
 // Prepare will parse the path and return a filter function that can then be applied to decoded JSON values.
-func Prepare(path string) (FilterFunc, error) {
+func Prepare(path string) (*parser, FilterFunc, error) {
 	p := newScanner(path)
 	if err := p.parse(); err != nil {
-		return nil, err
+		return p, nil, err
 	}
-	return p.prepareFilterFunc(), nil
+	return p, p.prepareFilterFunc(), nil
 }
 
 // FilterFunc applies a prepared json path to a JSON decoded value
@@ -98,6 +107,7 @@ type parser struct {
 	scanner scanner.Scanner
 	path    string
 	actions actions
+	update  interface{}
 }
 
 func (p *parser) prepareFilterFunc() FilterFunc {
@@ -114,7 +124,7 @@ func (p *parser) prepareFilterFunc() FilterFunc {
 }
 
 func newScanner(path string) *parser {
-	return &parser{path: path}
+	return &parser{path: path, update: nil}
 }
 
 func (p *parser) scan() rune {
@@ -183,6 +193,9 @@ func (p *parser) parseObjAccess() error {
 		}
 		if c, ok = obj[ident]; !ok {
 			return nil, fmt.Errorf("child '%s' not found in JSON object at %d", ident, column)
+		}
+		if p.update != nil {
+			obj[ident] = p.update
 		}
 		return a.next(r, c)
 	})

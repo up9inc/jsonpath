@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/yalp/jsonpath"
+	"github.com/up9inc/jsonpath"
 )
 
-func ExampleRead() {
+func ExampleGet() {
 	raw := []byte(`{"hello":"world"}`)
 
 	var data interface{}
 	json.Unmarshal(raw, &data)
 
-	out, err := jsonpath.Read(data, "$.hello")
+	out, err := jsonpath.Get(data, "$.hello")
 	if err != nil {
 		panic(err)
 	}
@@ -22,10 +22,27 @@ func ExampleRead() {
 	// Output: world
 }
 
+func ExampleSet() {
+	raw := []byte(`{"hello":"world"}`)
+
+	var data interface{}
+	json.Unmarshal(raw, &data)
+
+	jsonpath.Set(data, "$.hello", "universe")
+
+	out, err := jsonpath.Get(data, "$.hello")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Print(out)
+	// Output: universe
+}
+
 func ExamplePrepare() {
 	raw := []byte(`{"hello":"world"}`)
 
-	helloFilter, err := jsonpath.Prepare("$.hello")
+	_, helloFilter, err := jsonpath.Prepare("$.hello")
 	if err != nil {
 		panic(err)
 	}
