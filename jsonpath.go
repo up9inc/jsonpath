@@ -194,7 +194,7 @@ func (p *parser) parseObjAccess() error {
 		if c, ok = obj[ident]; !ok {
 			return nil, fmt.Errorf("child '%s' not found in JSON object at %d", ident, column)
 		}
-		if p.update != nil {
+		if (column + len(ident)) > len(p.path) && p.update != nil {
 			obj[ident] = p.update
 		}
 		return a.next(r, c)
@@ -203,9 +203,15 @@ func (p *parser) parseObjAccess() error {
 }
 
 func (p *parser) prepareWildcard() error {
+	column := p.scanner.Position.Column
 	p.add(func(r, c interface{}, a actions) (interface{}, error) {
 		values := searchResults{}
 		if obj, ok := c.(map[string]interface{}); ok {
+			for k, _ := range obj {
+				if column == len(p.path) && p.update != nil {
+					obj[k] = p.update
+				}
+			}
 			for _, v := range valuesSortedByKey(obj) {
 				v, err := a.next(r, v)
 				if err != nil {
@@ -214,10 +220,13 @@ func (p *parser) prepareWildcard() error {
 				values = values.append(v)
 			}
 		} else if array, ok := c.([]interface{}); ok {
-			for _, v := range array {
+			for i, v := range array {
 				v, err := a.next(r, v)
 				if err != nil {
 					continue
+				}
+				if column == len(p.path) && p.update != nil {
+					array[i] = p.update
 				}
 				values = values.append(v)
 			}
