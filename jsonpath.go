@@ -162,11 +162,13 @@ func (p *parser) parsePath() (err error) {
 			p.scanner.Mode = scanner.ScanIdents
 			switch p.scan() {
 			case scanner.Ident:
-				err = p.parseObjAccess()
+				err = p.parseObjAccess(false)
 			case '*':
 				err = p.prepareWildcard()
 			case '.':
 				err = p.parseDeep()
+			case '[':
+				err = p.parseObjAccess(true)
 			default:
 				err = fmt.Errorf("expected JSON child identifier after '.' at %d", p.column())
 			}
@@ -183,7 +185,11 @@ func (p *parser) parsePath() (err error) {
 	return
 }
 
-func (p *parser) parseObjAccess() error {
+func (p *parser) parseObjAccess(bracket bool) error {
+	if bracket {
+		p.scan() // eat [
+		p.scan() // eat '
+	}
 	ident := p.text()
 	column := p.scanner.Position.Column
 	p.add(func(r, c interface{}, a actions) (interface{}, error) {
@@ -199,6 +205,10 @@ func (p *parser) parseObjAccess() error {
 		}
 		return a.next(r, c)
 	})
+	if bracket {
+		p.scan() // eat '
+		p.scan() // eat ]
+	}
 	return nil
 }
 
@@ -243,7 +253,7 @@ func (p *parser) parseDeep() (err error) {
 		p.add(func(r, c interface{}, a actions) (interface{}, error) {
 			return recSearchParent(r, c, a, searchResults{}), nil
 		})
-		return p.parseObjAccess()
+		return p.parseObjAccess(false)
 	case '[':
 		p.add(func(r, c interface{}, a actions) (interface{}, error) {
 			return recSearchParent(r, c, a, searchResults{}), nil
