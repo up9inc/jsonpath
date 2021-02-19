@@ -124,6 +124,8 @@ func (p *parser) prepareFilterFunc() FilterFunc {
 }
 
 func newScanner(path string) *parser {
+	path = strings.ReplaceAll(path, "['", "[\"")
+	path = strings.ReplaceAll(path, "']", "\"]")
 	return &parser{path: path, update: nil}
 }
 
@@ -186,11 +188,17 @@ func (p *parser) parsePath() (err error) {
 }
 
 func (p *parser) parseObjAccess(bracket bool) error {
+	mode_backup := p.scanner.Mode
 	if bracket {
+		p.scanner.Mode = scanner.ScanIdents | scanner.ScanStrings | scanner.ScanInts
 		p.scan() // eat [
-		p.scan() // eat '
 	}
 	ident := p.text()
+	if bracket {
+		ident = ident[1:len(ident)-1]
+		p.scan() // eat ]
+		p.scanner.Mode = mode_backup
+	}
 	column := p.scanner.Position.Column
 	p.add(func(r, c interface{}, a actions) (interface{}, error) {
 		obj, ok := c.(map[string]interface{})
@@ -205,10 +213,6 @@ func (p *parser) parseObjAccess(bracket bool) error {
 		}
 		return a.next(r, c)
 	})
-	if bracket {
-		p.scan() // eat '
-		p.scan() // eat ]
-	}
 	return nil
 }
 
